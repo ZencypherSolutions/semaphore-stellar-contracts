@@ -1,20 +1,20 @@
-# Pull Request Template
+# Pull Request Template 📥
 
 // Please fill out the following sections to help us review your PR.
 
-## Closes # (issue)
+## ✅ Closes # (issue)
 
 // Please provide the issue number this PR is closing.
 
-## Summary
+## 💬 Summary
 
 // Please provide a summary of the changes made in this PR.
 
-## Changes Made
+## 🔁 Changes Made 
 
 // Please provide a detailed description of the changes made in this PR.
 
-## Checklist
+## 📝 Checklist 
 
 - [ ] My code follows the style guidelines of this project
 - [ ] I have performed a self-review of my code
