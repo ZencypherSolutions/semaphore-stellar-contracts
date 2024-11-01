@@ -10,7 +10,7 @@ Before you start contributing, please check the [Issue Tracker](https://github.c
 
 ### Create new issues
 
-If you are creating a new issue for fixes or features, please provide a descriptive title and detailed description. If possible, include a code sample or an executable test case demonstrating the expected behavior that is not occurring. This issues will then be analyzed by the maintainers and give you the green light to continue.
+If you are creating a new issue, please provide a descriptive title and detailed description. If possible, include a code sample or an executable test case demonstrating the expected behavior that is not occurring. The issue will then be analyzed by the maintainers and give you the green light to continue.
 
 ### Fork and Clone the Repository
 
