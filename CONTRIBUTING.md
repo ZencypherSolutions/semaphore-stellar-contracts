@@ -8,11 +8,13 @@ Following these guidelines shows respect for the maintainersâ€™ time, and theyâ€
 
 Before you start contributing, please check the [Issue Tracker](https://github.com/ZencypherSolutions/semaphore-stellar-contracts/issues) to see if there are any existing issues that match what you are intending to do. If the issue doesn't exist, please create it.
 
-If you are creating a new issue, please provide a descriptive title and detailed description. If possible, include a code sample or an executable test case demonstrating the expected behavior that is not occurring.
+### Create new issues
+
+If you are creating a new issue for fixes or features, please provide a descriptive title and detailed description. If possible, include a code sample or an executable test case demonstrating the expected behavior that is not occurring. This issues will then be analyzed by the maintainers and give you the green light to continue.
 
 ### Fork and Clone the Repository
 
-Once you've found an issue to work on, the next step is to fork the Semaphore Stellar repo and clone it to your local machine. This is necessary because you probably won't have push access to the main repo.
+Once you've found an issue to work on, the next step is to fork the Semaphore Stellar repo and clone it to your local machine. This is necessary because you won't have push access to the main repo.
 
 ## Making Changes
 
@@ -24,7 +26,7 @@ As you're making changes, make sure you follow the coding conventions used throu
 
 ## Submitting a Pull Request
 
-Once your changes are ready, commit them and push the branch to your forked repo on GitHub. Then you can open a pull request from your branch to the `main` branch of the Semaphore Stellar repo.
+Once your changes are ready, commit them and push the branch to your forked repo on GitHub. Then you can open a pull request from your branch to the `main` branch of the Semaphore Stellar docs repo.
 
 When you submit the pull request, please provide a clear, detailed description of the changes you've made. If you're addressing a specific issue, make sure you reference it in the description.
 
@@ -32,4 +34,4 @@ Your pull request will be reviewed by the maintainers of Semaphore Stellar. They
 
 ## Final Notes
 
-Again, thank you for considering to contribute to Semaphore Stellar. Your contribution is invaluable to us. We hope this guide makes the contribution process clear and answers any questions you might have. If not, feel free to ask on [Telegram](https://t.me/+-9623JNgGjEyNzI5).
+Thank you for considering to contribute to Semaphore Stellar. Your contribution is invaluable to us. We hope this guide makes the contribution process clear and answers any questions you might have. If not, feel free to ask on [Telegram](https://t.me/+-9623JNgGjEyNzI5).
