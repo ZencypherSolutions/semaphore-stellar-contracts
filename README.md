@@ -13,7 +13,6 @@ Semaphore is a zero-knowledge protocol designed to provide privacy for applicati
 ## Community Support
 For questions, you may join these groups:
 - Semaphore-Stellar Maintainers: [Join the Telegram Group](https://t.me/+-9623JNgGjEyNzI5)
-- Semaphore Community (core developers): Search @semaphore_community on Telegram.
 
 ### Maintainers
 - [Daniel Garbanzo](https://github.com/bitfalt)
