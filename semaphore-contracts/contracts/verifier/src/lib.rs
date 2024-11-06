@@ -72,6 +72,12 @@ impl SemaphoreVerifier {
         if public_inputs.len() != 4 {
             return Err("Invalid number of public inputs");
         }
+        // 1. Calculate the linear combination of the verification points
+        let mut vk_x = G1Affine::zero().into_projective();
+        for (i, input) in public_inputs.iter().enumerate() {
+            vk_x += self.vk.ic[i].mul(input.into_repr());
+        }
+        let vk_x = vk_x.into_affine();
     }
 
 }
