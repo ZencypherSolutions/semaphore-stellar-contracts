@@ -78,6 +78,9 @@ impl SemaphoreVerifier {
             vk_x += self.vk.ic[i].mul(input.into_repr());
         }
         let vk_x = vk_x.into_affine();
+
+        // 2. Perform the bilinear pairing
+        let neg_a = -proof.a.into_projective();
     }
 
 }
