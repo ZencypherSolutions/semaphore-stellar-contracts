@@ -29,5 +29,10 @@ pub struct SemaphoreVerifier {
 
 impl SemaphoreVerifier {
 
+    // Initialize the verification key based on the tree depth
+    pub fn new(merkle_tree_depth: usize) -> Self {
+        let vk = Self::init_verification_key(merkle_tree_depth);
+        Self { vk }
+    }
 
 }
