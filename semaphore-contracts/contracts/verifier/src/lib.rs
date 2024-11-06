@@ -26,3 +26,8 @@ pub struct Proof {
 pub struct SemaphoreVerifier {
     vk: VerificationKey,
 }
+
+impl SemaphoreVerifier {
+
+
+}
