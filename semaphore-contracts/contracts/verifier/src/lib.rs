@@ -91,4 +91,12 @@ impl SemaphoreVerifier {
         Ok(pairing_check.is_one())
     }
 
+    // Helper
+    fn check_in_field(&self, value: &Fr) -> bool {
+        !value.is_zero() && value != &Fr::one()
+    }
+
+    pub fn verify_constraints(&self, public_inputs: &[Fr]) -> bool {
+        public_inputs.iter().all(|input| self.check_in_field(input))
+    }
 }
