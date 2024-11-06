@@ -68,7 +68,10 @@ impl SemaphoreVerifier {
         public_inputs: &[Fr],
         merkle_tree_depth: usize,
     ) -> Result<bool, &'static str> {
-    
+        // Verify that the number of public inputs is correct
+        if public_inputs.len() != 4 {
+            return Err("Invalid number of public inputs");
+        }
     }
 
 }
