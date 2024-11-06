@@ -6,3 +6,23 @@ use std::str::FromStr;
 use ark_ff::QuadExtField;
 use ark_bn254::Fq2Parameters;
 use ark_ff::Fp2ParamsWrapper;
+
+/// Constants for the Semaphore verifier
+pub struct VerificationKey {
+    pub alpha_g1: G1Affine,
+    pub beta_g2: G2Affine,
+    pub gamma_g2: G2Affine,
+    pub delta_g2: G2Affine,
+    pub ic: Vec<G1Affine>,
+}
+
+#[derive(Debug)]
+pub struct Proof {
+    pub a: G1Affine,
+    pub b: G2Affine,
+    pub c: G1Affine,
+}
+
+pub struct SemaphoreVerifier {
+    vk: VerificationKey,
+}
