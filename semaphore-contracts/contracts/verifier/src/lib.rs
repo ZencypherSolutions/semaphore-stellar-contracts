@@ -87,6 +87,8 @@ impl SemaphoreVerifier {
             * Bn254::pairing(self.vk.alpha_g1, proof.b)
             * Bn254::pairing(vk_x, self.vk.gamma_g2)
             * Bn254::pairing(proof.c, self.vk.delta_g2);
+
+        Ok(pairing_check.is_one())
     }
 
 }
