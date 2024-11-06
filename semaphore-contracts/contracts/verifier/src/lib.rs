@@ -62,4 +62,13 @@ impl SemaphoreVerifier {
         }
     }
 
+    pub fn verify_proof(
+        &self,
+        proof: &Proof,
+        public_inputs: &[Fr],
+        merkle_tree_depth: usize,
+    ) -> Result<bool, &'static str> {
+    
+    }
+
 }
