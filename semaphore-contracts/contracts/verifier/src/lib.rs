@@ -81,6 +81,12 @@ impl SemaphoreVerifier {
 
         // 2. Perform the bilinear pairing
         let neg_a = -proof.a.into_projective();
+
+        // e(A, B) * e(α, β) * e(vk_x, γ) * e(C, δ) == 1
+        let pairing_check = Bn254::pairing(neg_a, self.vk.beta_g2)
+            * Bn254::pairing(self.vk.alpha_g1, proof.b)
+            * Bn254::pairing(vk_x, self.vk.gamma_g2)
+            * Bn254::pairing(proof.c, self.vk.delta_g2);
     }
 
 }
