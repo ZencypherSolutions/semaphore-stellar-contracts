@@ -8,6 +8,7 @@ pub trait SemaphoreGroupInterface {
     fn create_group(env: Env, group_id: u32, admin: Address) -> Result<(), Error>;
     fn update_group_admin(env: Env, group_id: u32, new_admin: Address) -> Result<(), Error>;
     fn accept_group_admin(env: Env, group_id: u32) -> Result<(), Error>;
+    fn get_pending_admin(env: Env, group_id: u32) -> Result<Address, Error>;
     
     // Member Management
     fn add_member(env: Env, group_id: u32, identity_commitment: u32) -> Result<(), Error>;

@@ -1,4 +1,6 @@
 #![no_std]
+
+
 use soroban_sdk::{contract, contractimpl, Env, Address, Vec, Symbol};
 use crate::interface::SemaphoreGroupInterface;
 use crate::datatypes::{Error, DataKey, Member};
@@ -60,39 +62,47 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         Ok(())
     }
 
-    fn accept_group_admin(env: Env, group_id: u32) -> Result<(), Error> {
+   fn accept_group_admin(env: Env, group_id: u32) -> Result<(), Error> {
+    let pending_admin_key = DataKey::PendingAdmin(group_id);
+    let admin_key = DataKey::Admin(group_id);
+
+    // Verify group exists
+    let current_admin: Address = env.storage().instance()
+        .get::<_, Address>(&admin_key)  
+        .ok_or(Error::GroupDoesNotExist)?;
+
+    // Get and verify pending admin
+    let new_admin: Address = env.storage().instance()
+        .get::<_, Address>(&pending_admin_key)
+        .ok_or(Error::CallerIsNotThePendingGroupAdmin)?;
+
+    // Verify caller is the pending admin
+    (&new_admin).require_auth();
+    
+    // Update admin
+    env.storage().instance().set(&admin_key, &new_admin);
+    env.storage().instance().remove(&pending_admin_key);
+
+    // Emit event
+    env.events().publish(
+        (
+            Symbol::new(&env, "group_admin_updated"),
+            group_id,
+            current_admin,
+            new_admin
+        ),
+        ()
+    );
+
+    Ok(())
+}
+    fn get_pending_admin(env: Env, group_id: u32) -> Result<Address, Error> {
         let pending_admin_key = DataKey::PendingAdmin(group_id);
-        let admin_key = DataKey::Admin(group_id);
-
-        // Verify group exists
-        let current_admin: Address = env.storage().instance()
-            .get::<_, Address>(&admin_key)  
-            .ok_or(Error::GroupDoesNotExist)?;
-
-        // Get and verify pending admin
-        let new_admin: Address = env.storage().instance()
-            .get::<_, Address>(&pending_admin_key)
-            .ok_or(Error::CallerIsNotThePendingGroupAdmin)?;
-
-        // Verify caller is the pending admin
-        (&new_admin).require_auth();
-        // Update admin
-        env.storage().instance().set(&admin_key, &new_admin);
-        env.storage().instance().remove(&pending_admin_key);  
-
-        // Emit event
-        env.events().publish(
-            (
-                Symbol::new(&env, "group_admin_updated"),
-                group_id,
-                current_admin,
-                new_admin
-            ),
-            ()
-        );
-
-        Ok(())
+        // Try to get the pending admin; return an error if not set
+        env.storage().instance().get(&pending_admin_key)
+            .ok_or(Error::CallerIsNotThePendingGroupAdmin)
     }
+    
 
     fn add_member(env: Env, group_id: u32, identity_commitment: u32) -> Result<(), Error> {
         if identity_commitment == 0 {
@@ -141,11 +151,22 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
     }
 
     fn add_members(env: Env, group_id: u32, identity_commitments: Vec<u32>) -> Result<(), Error> {
+        // Get admin to verify authorization once for the whole operation
+        let admin_key = DataKey::Admin(group_id);
+        let admin = env.storage().instance().get::<_, Address>(&admin_key)
+            .ok_or(Error::GroupDoesNotExist)?;
+        
+        // Verify caller is admin for the main add_members call
+        (&admin).require_auth();
+    
+        // Add each member
         for commitment in identity_commitments.iter() {
+            // Note: we don't need to require_auth again since we're in the same transaction
             Self::add_member(env.clone(), group_id, commitment)?;
         }
         Ok(())
     }
+
 
     fn update_member(
         env: Env,
@@ -254,6 +275,12 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
     }
 
     fn is_member(env: Env, group_id: u32, identity_commitment: u32) -> Result<bool, Error> {
+        // Check if group exists first
+        let admin_key = DataKey::Admin(group_id);
+        if !env.storage().instance().has(&admin_key) {
+            return Err(Error::GroupDoesNotExist);
+        }
+        
         let member_key = DataKey::Member(group_id, identity_commitment);
         Ok(env.storage().instance().has(&member_key))
     }
