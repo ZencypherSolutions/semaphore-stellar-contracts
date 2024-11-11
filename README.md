@@ -1,4 +1,4 @@
-# semaphore-stellar
+# Semaphore-stellar
 This project aims to integrate Semaphore's privacy-focused protocol with the Stellar network, enabling private and anonymous voting or signaling in Stellar-based applications. Since Stellar is not EVM-compatible, this tool bridges the gap to make Semaphore functionalities accessible in Stellar's ecosystem.
 
 ## Project Structure
