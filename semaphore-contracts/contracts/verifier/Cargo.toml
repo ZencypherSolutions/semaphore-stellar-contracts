@@ -10,10 +10,8 @@ doctest = false
 
 [dependencies]
 soroban-sdk = { workspace = true }
-ark-ff = "0.3"
-ark-ec = "0.3"
-ark-std = "0.3"
-ark-bn254 = "0.3"
+semaphore = { git = "https://github.com/worldcoin/semaphore-rs" }
+ethers-core = { git = "https://github.com/gakonst/ethers-rs", default-features = false }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
