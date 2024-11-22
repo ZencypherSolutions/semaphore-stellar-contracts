@@ -1,21 +1,19 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{vec, Env, String};
+use soroban_sdk::{testutils::Address as _, vec, Env, String};
 
 #[test]
 fn test() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, HelloContract);
-    let client = HelloContractClient::new(&env, &contract_id);
+    let contract_id = env.register_contract(None, SemaphoreGroupContract);
+    let client = SemaphoreGroupContractClient::new(&env, &contract_id);
 
-    let words = client.hello(&String::from_str(&env, "Dev"));
-    assert_eq!(
-        words,
-        vec![
-            &env,
-            String::from_str(&env, "Hello"),
-            String::from_str(&env, "Dev"),
-        ]
-    );
+    // Test admin, member1, member2
+    let admin = Address::generate(&env);
+    let member1 = Address::generate(&env);
+    let member2 = Address::generate(&env);
+
+    let group_id = 1;
+    let words = client.create_group(&group_id, &admin);
 }
