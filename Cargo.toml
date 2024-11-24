@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "contracts/group",
+    "contracts/semaphore_key_pts",
+    "contracts/verifier"
+]
+
+[workspace.dependencies]
+soroban-sdk = "22.0.0-rc.3.2"

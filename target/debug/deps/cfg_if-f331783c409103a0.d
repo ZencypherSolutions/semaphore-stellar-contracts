@@ -1,0 +1,7 @@
+/mnt/c/issues/semaphore/semaphore-stellar-contracts-Josue/target/debug/deps/libcfg_if-f331783c409103a0.rmeta: /home/josue1908/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cfg-if-1.0.0/src/lib.rs
+
+/mnt/c/issues/semaphore/semaphore-stellar-contracts-Josue/target/debug/deps/libcfg_if-f331783c409103a0.rlib: /home/josue1908/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cfg-if-1.0.0/src/lib.rs
+
+/mnt/c/issues/semaphore/semaphore-stellar-contracts-Josue/target/debug/deps/cfg_if-f331783c409103a0.d: /home/josue1908/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cfg-if-1.0.0/src/lib.rs
+
+/home/josue1908/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cfg-if-1.0.0/src/lib.rs:
