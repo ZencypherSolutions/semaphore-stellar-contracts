@@ -1,5 +1,7 @@
+use crate::imt::MerkleTree;
 use soroban_sdk::contracterror;
 use soroban_sdk::contracttype;
+use soroban_sdk::Address;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -21,6 +23,7 @@ pub enum DataKey {
     PendingAdmin(u32), // maps group_id -> pending admin address
     Member(u32, u32),  // maps (group_id, identity_commitment) -> Member
     MemberCount(u32),  // maps group_id -> number of members
+    Group(u32),        // maps group_id -> Group
 }
 
 #[contracttype]
@@ -29,4 +32,11 @@ pub struct Member {
     pub identity_commitment: u32,
     pub group_id: u32,
     pub index: u32, // Position in the group
+}
+
+#[contracttype]
+pub struct Group {
+    pub id: u32,
+    pub admin: Address,
+    pub merkle_tree: MerkleTree,
 }

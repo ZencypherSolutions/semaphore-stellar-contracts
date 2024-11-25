@@ -43,7 +43,7 @@ const fn depth(index: usize) -> usize {
 
 /// Compute the hash of a parent node given its two child nodes
 fn hash_node(left: NodeType, right: NodeType) -> NodeType {
-    // TODO: add a hash function
+    // TODO: add the `BLS12-381` hash function
     // example
     if left == 0 || right == 0 {
         1
@@ -80,12 +80,42 @@ impl MerkleTree {
             empty,
         }
     }
+
+    pub fn add_leaf(&mut self, leaf_index: usize, leaf_value: NodeType) {
+        let total_leaves = 1 << self.depth; // Total number of leaves
+        let leaf_pos: usize = total_leaves - 1 + leaf_index; // Position of the leaf in the tree
+
+        // Insert the leaf value
+        self.nodes.set(leaf_pos as u32, leaf_value);
+
+        // Update parent nodes up to the root
+        let mut current = leaf_pos;
+        while let Some(parent_idx) = parent(current) {
+            let left = self.nodes.get(left_child(parent_idx) as u32).unwrap_or(0);
+            let right = self
+                .nodes
+                .get((left_child(parent_idx) + 1) as u32)
+                .unwrap_or(0);
+            let parent_hash = hash_node(left, right);
+
+            // Update the parent hash
+            self.nodes.set(parent_idx as u32, parent_hash);
+            current = parent_idx;
+        }
+    }
+
+    pub fn verify_proof(&self, identity_commitment: u32, proof: Vec<u32>) -> bool {
+        // TODO: implement proof verification
+        true
+    }
+
+    pub fn get_root(&self) -> u32 {
+        self.nodes.get(1).unwrap()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use soroban_sdk::log;
-
     use super::*;
 
     #[test]

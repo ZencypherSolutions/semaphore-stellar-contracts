@@ -2,7 +2,11 @@
 
 use crate::datatypes::{DataKey, Error, Member};
 use crate::interface::SemaphoreGroupInterface;
+use datatypes::Group;
+use imt::MerkleTree;
 use soroban_sdk::{contract, contractimpl, Address, Env, Symbol, Vec};
+
+const DEFAULT_DEPTH: u32 = 10;
 
 #[contract]
 pub struct SemaphoreGroupContract;
@@ -22,6 +26,19 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         env.storage()
             .instance()
             .set(&DataKey::MemberCount(group_id), &0u32);
+
+        // Init merkle tree for group here
+        let merkle_tree = MerkleTree::new(&env, DEFAULT_DEPTH, 0);
+        let group = Group {
+            id: group_id,
+            admin: admin.clone(),
+            merkle_tree,
+        };
+
+        // store group in storage
+        env.storage()
+            .instance()
+            .set(&DataKey::Group(group_id), &group);
 
         // Emit events using Symbol for event names and proper tuple syntax
         env.events()
@@ -144,6 +161,14 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         env.storage()
             .instance()
             .set(&count_key, &(current_count + 1));
+
+        // update merkle tree
+        let group_key = DataKey::Group(group_id);
+        let mut group: Group = env.storage().instance().get(&group_key).unwrap();
+        group
+            .merkle_tree
+            .add_leaf(current_count as usize, identity_commitment);
+        env.storage().instance().set(&group_key, &group);
 
         // Emit event
         env.events().publish(
@@ -310,6 +335,24 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
 
         let member_key = DataKey::Member(group_id, identity_commitment);
         Ok(env.storage().instance().has(&member_key))
+    }
+
+    // Verification methods
+    fn verify_merkle_proof(
+        env: Env,
+        group_id: u32,
+        identity_commitment: u32,
+        proof: Vec<u32>,
+    ) -> Result<bool, Error> {
+        let group_key = DataKey::Group(group_id);
+        let group: Group = env.storage().instance().get(&group_key).unwrap();
+        Ok(group.merkle_tree.verify_proof(identity_commitment, proof))
+    }
+
+    fn get_merkle_root(env: Env, group_id: u32) -> Result<u32, Error> {
+        let group_key = DataKey::Group(group_id);
+        let group: Group = env.storage().instance().get(&group_key).unwrap();
+        Ok(group.merkle_tree.get_root())
     }
 }
 mod datatypes;
