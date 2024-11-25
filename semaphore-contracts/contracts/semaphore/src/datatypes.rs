@@ -1,5 +1,5 @@
-use soroban_sdk::contracttype;
 use soroban_sdk::contracterror;
+use soroban_sdk::contracttype;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -30,5 +30,3 @@ pub struct Member {
     pub group_id: u32,
     pub index: u32, // Position in the group
 }
-
-
