@@ -79,30 +79,27 @@ impl MerkleTree {
         }
     }
 
-    pub fn add_leaf(&mut self, leaf_index: usize, leaf_value: u32) {
-        // let total_leaves = 1 << self.depth; // Total number of leaves
-        // let leaf_pos: usize = total_leaves - 1 + leaf_index; // Position of the leaf in the tree
+    pub fn add_leaf(&mut self, env: &Env, leaf_index: usize, leaf_value: Bytes) {
+        let total_leaves = 1 << self.depth; // Total number of leaves
+        let leaf_pos: usize = total_leaves - 1 + leaf_index; // Position of the leaf in the tree
 
-        // // Insert the leaf value
-        // self.nodes.set(leaf_pos as u32, leaf_value);
+        // Insert the leaf value
+        self.nodes.set(leaf_pos as u32, leaf_value);
 
-        // // Update parent nodes up to the root
-        // let mut current = leaf_pos;
-        // while let Some(parent_idx) = parent(current) {
-        //     let left = self.nodes.get(left_child(parent_idx) as u32).unwrap_or(0);
-        //     let right = self
-        //         .nodes
-        //         .get((left_child(parent_idx) + 1) as u32)
-        //         .unwrap_or(0);
-        //     let parent_hash = hash_node(left, right);
+        // Update parent nodes up to the root
+        let mut current = leaf_pos;
+        while let Some(parent_idx) = parent(current) {
+            let left = self.nodes.get(left_child(parent_idx) as u32).unwrap();
+            let right = self.nodes.get((left_child(parent_idx) + 1) as u32).unwrap();
+            let parent_hash = hash_node(env, left, right);
 
-        //     // Update the parent hash
-        //     self.nodes.set(parent_idx as u32, parent_hash);
-        //     current = parent_idx;
-        // }
+            // Update the parent hash
+            self.nodes.set(parent_idx as u32, parent_hash);
+            current = parent_idx;
+        }
     }
 
-    pub fn verify_proof(&self, identity_commitment: u32, proof: Vec<u32>) -> bool {
+    pub fn verify_proof(&self, identity_commitment: Bytes, proof: Vec<u32>) -> bool {
         // TODO: implement proof verification
         true
     }
