@@ -1,8 +1,27 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, vec, Env, String};
+use soroban_sdk::{
+    crypto::bls12_381::G1Affine, log, testutils::Address as _, vec, Bytes, Env, String,
+};
 
+#[test]
+fn test_bls12_381() {
+    let env = Env::default();
+    let bls12_381 = env.crypto().bls12_381();
+
+    // Create message and domain separation tag bytes
+    let msg = Bytes::from_slice(&env, b"message to hash");
+    let dst = Bytes::from_slice(&env, b"domain separation tag");
+
+    // Hash the message to a G1 point
+    let point: G1Affine = bls12_381.hash_to_g1(&msg, &dst);
+
+    // log the point
+    log!(&env, "point", point);
+}
+
+#[test]
 #[test]
 fn assert_group_admin() {
     let env = Env::default();
