@@ -4,7 +4,7 @@ use crate::datatypes::{DataKey, Error, Member};
 use crate::interface::SemaphoreGroupInterface;
 use datatypes::Group;
 use imt::MerkleTree;
-use soroban_sdk::{contract, contractimpl, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, Address, Bytes, Env, Symbol, Vec};
 
 const DEFAULT_DEPTH: u32 = 10;
 
@@ -28,7 +28,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
             .set(&DataKey::MemberCount(group_id), &0u32);
 
         // Init merkle tree for group here
-        let merkle_tree = MerkleTree::new(&env, DEFAULT_DEPTH, 0);
+        let merkle_tree = MerkleTree::new(&env, DEFAULT_DEPTH, Bytes::from_slice(&env, &[0u8; 32]));
         let group = Group {
             id: group_id,
             admin: admin.clone(),
@@ -350,9 +350,10 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
     }
 
     fn get_merkle_root(env: Env, group_id: u32) -> Result<u32, Error> {
-        let group_key = DataKey::Group(group_id);
-        let group: Group = env.storage().instance().get(&group_key).unwrap();
-        Ok(group.merkle_tree.get_root())
+        // let group_key = DataKey::Group(group_id);
+        // let group: Group = env.storage().instance().get(&group_key).unwrap();
+        // Ok(group.merkle_tree.get_root())
+        Ok(0)
     }
 }
 mod datatypes;

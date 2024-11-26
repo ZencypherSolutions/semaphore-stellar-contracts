@@ -10,18 +10,41 @@ fn test_bls12_381() {
     let env = Env::default();
     let bls12_381 = env.crypto().bls12_381();
 
-    // Create message and domain separation tag bytes
-    let msg = Bytes::from_slice(&env, b"message to hash");
+    // Create two different messages to hash
+    let msg1 = Bytes::from_slice(&env, b"message1 to hash");
+    let msg2 = Bytes::from_slice(&env, b"message2 to hash");
     let dst = Bytes::from_slice(&env, b"domain separation tag");
 
-    // Hash the message to a G1 point
-    let point: G1Affine = bls12_381.hash_to_g1(&msg, &dst);
+    // Hash both messages to G1 points
+    let point1: G1Affine = bls12_381.hash_to_g1(&msg1, &dst);
+    let point2: G1Affine = bls12_381.hash_to_g1(&msg2, &dst);
 
-    // log the point
-    log!(&env, "point", point);
+    // Convert points to bytes for storage
+    let bytes1 = point1.to_bytes();
+    let bytes2 = point2.to_bytes();
+
+    // Convert back to points
+    let recovered_point1 = G1Affine::from_bytes(bytes1);
+    let recovered_point2 = G1Affine::from_bytes(bytes2);
+
+    // Add points using both original and recovered points
+    let sum1 = bls12_381.g1_add(&point1, &point2);
+    let sum2 = bls12_381.g1_add(&recovered_point1, &recovered_point2);
+
+    // Log the results
+    log!(&env, "Original point1: {:?}", point1.to_bytes());
+    log!(&env, "Original point2: {:?}", point2.to_bytes());
+    log!(&env, "Recovered point1: {:?}", recovered_point1.to_bytes());
+    log!(&env, "Recovered point2: {:?}", recovered_point2.to_bytes());
+    log!(&env, "Sum1: {:?}", sum1.to_bytes());
+    log!(&env, "Sum2: {:?}", sum2.to_bytes());
+
+    // Verify that conversion didn't affect the points
+    assert_eq!(point1.to_bytes(), recovered_point1.to_bytes());
+    assert_eq!(point2.to_bytes(), recovered_point2.to_bytes());
+    assert_eq!(sum1.to_bytes(), sum2.to_bytes());
 }
 
-#[test]
 #[test]
 fn assert_group_admin() {
     let env = Env::default();
