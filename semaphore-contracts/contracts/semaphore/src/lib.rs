@@ -126,8 +126,8 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
             .ok_or(Error::CallerIsNotThePendingGroupAdmin)
     }
 
-    fn add_member(env: Env, group_id: u32, identity_commitment: u32) -> Result<(), Error> {
-        if identity_commitment == 0 {
+    fn add_member(env: Env, group_id: u32, identity_commitment: Bytes) -> Result<(), Error> {
+        if identity_commitment == Bytes::new(&env) {
             return Err(Error::InvalidIdentityCommitment);
         }
 
@@ -141,7 +141,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         // Verify caller is admin
         (&admin).require_auth();
 
-        let member_key = DataKey::Member(group_id, identity_commitment);
+        let member_key = DataKey::Member(group_id, identity_commitment.clone());
         if env.storage().instance().has(&member_key) {
             return Err(Error::MemberAlreadyExists);
         }
@@ -152,7 +152,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
 
         // Create and store new member
         let member = Member {
-            identity_commitment,
+            identity_commitment: identity_commitment.clone(),
             group_id,
             index: current_count,
         };
@@ -167,7 +167,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         let mut group: Group = env.storage().instance().get(&group_key).unwrap();
         group
             .merkle_tree
-            .add_leaf(current_count as usize, identity_commitment);
+            .add_leaf(&env, current_count as usize, identity_commitment.clone());
         env.storage().instance().set(&group_key, &group);
 
         // Emit event
@@ -184,7 +184,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         Ok(())
     }
 
-    fn add_members(env: Env, group_id: u32, identity_commitments: Vec<u32>) -> Result<(), Error> {
+    fn add_members(env: Env, group_id: u32, identity_commitments: Vec<Bytes>) -> Result<(), Error> {
         // Get admin to verify authorization once for the whole operation
         let admin_key = DataKey::Admin(group_id);
         let admin = env
@@ -207,10 +207,10 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
     fn update_member(
         env: Env,
         group_id: u32,
-        old_identity_commitment: u32,
-        new_identity_commitment: u32,
+        old_identity_commitment: Bytes,
+        new_identity_commitment: Bytes,
     ) -> Result<(), Error> {
-        if new_identity_commitment == 0 {
+        if new_identity_commitment == Bytes::new(&env) {
             return Err(Error::InvalidIdentityCommitment);
         }
 
@@ -225,8 +225,8 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         (&admin).require_auth();
 
         // Check if old member exists and new member doesn't
-        let old_member_key = DataKey::Member(group_id, old_identity_commitment);
-        let new_member_key = DataKey::Member(group_id, new_identity_commitment);
+        let old_member_key = DataKey::Member(group_id, old_identity_commitment.clone());
+        let new_member_key = DataKey::Member(group_id, new_identity_commitment.clone());
 
         let old_member: Member = env
             .storage()
@@ -240,7 +240,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
 
         // Create updated member
         let new_member = Member {
-            identity_commitment: new_identity_commitment,
+            identity_commitment: new_identity_commitment.clone(),
             group_id,
             index: old_member.index,
         };
@@ -263,7 +263,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         Ok(())
     }
 
-    fn remove_member(env: Env, group_id: u32, identity_commitment: u32) -> Result<(), Error> {
+    fn remove_member(env: Env, group_id: u32, identity_commitment: Bytes) -> Result<(), Error> {
         let admin_key = DataKey::Admin(group_id);
         let admin: Address = env
             .storage()
@@ -275,7 +275,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         (&admin).require_auth();
 
         // Check if member exists
-        let member_key = DataKey::Member(group_id, identity_commitment);
+        let member_key = DataKey::Member(group_id, identity_commitment.clone());
         if !env.storage().instance().has(&member_key) {
             return Err(Error::MemberDoesNotExist);
         }
@@ -310,7 +310,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
             .ok_or(Error::GroupDoesNotExist)
     }
 
-    fn get_member(env: Env, group_id: u32, identity_commitment: u32) -> Result<Member, Error> {
+    fn get_member(env: Env, group_id: u32, identity_commitment: Bytes) -> Result<Member, Error> {
         let member_key = DataKey::Member(group_id, identity_commitment);
         env.storage()
             .instance()
@@ -326,7 +326,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
             .ok_or(Error::GroupDoesNotExist)
     }
 
-    fn is_member(env: Env, group_id: u32, identity_commitment: u32) -> Result<bool, Error> {
+    fn is_member(env: Env, group_id: u32, identity_commitment: Bytes) -> Result<bool, Error> {
         // Check if group exists first
         let admin_key = DataKey::Admin(group_id);
         if !env.storage().instance().has(&admin_key) {
@@ -341,7 +341,7 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
     fn verify_merkle_proof(
         env: Env,
         group_id: u32,
-        identity_commitment: u32,
+        identity_commitment: Bytes,
         proof: Vec<u32>,
     ) -> Result<bool, Error> {
         let group_key = DataKey::Group(group_id);

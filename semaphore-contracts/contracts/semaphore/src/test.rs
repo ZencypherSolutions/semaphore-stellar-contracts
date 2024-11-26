@@ -6,46 +6,6 @@ use soroban_sdk::{
 };
 
 #[test]
-fn test_bls12_381() {
-    let env = Env::default();
-    let bls12_381 = env.crypto().bls12_381();
-
-    // Create two different messages to hash
-    let msg1 = Bytes::from_slice(&env, b"message1 to hash");
-    let msg2 = Bytes::from_slice(&env, b"message2 to hash");
-    let dst = Bytes::from_slice(&env, b"domain separation tag");
-
-    // Hash both messages to G1 points
-    let point1: G1Affine = bls12_381.hash_to_g1(&msg1, &dst);
-    let point2: G1Affine = bls12_381.hash_to_g1(&msg2, &dst);
-
-    // Convert points to bytes for storage
-    let bytes1 = point1.to_bytes();
-    let bytes2 = point2.to_bytes();
-
-    // Convert back to points
-    let recovered_point1 = G1Affine::from_bytes(bytes1);
-    let recovered_point2 = G1Affine::from_bytes(bytes2);
-
-    // Add points using both original and recovered points
-    let sum1 = bls12_381.g1_add(&point1, &point2);
-    let sum2 = bls12_381.g1_add(&recovered_point1, &recovered_point2);
-
-    // Log the results
-    log!(&env, "Original point1: {:?}", point1.to_bytes());
-    log!(&env, "Original point2: {:?}", point2.to_bytes());
-    log!(&env, "Recovered point1: {:?}", recovered_point1.to_bytes());
-    log!(&env, "Recovered point2: {:?}", recovered_point2.to_bytes());
-    log!(&env, "Sum1: {:?}", sum1.to_bytes());
-    log!(&env, "Sum2: {:?}", sum2.to_bytes());
-
-    // Verify that conversion didn't affect the points
-    assert_eq!(point1.to_bytes(), recovered_point1.to_bytes());
-    assert_eq!(point2.to_bytes(), recovered_point2.to_bytes());
-    assert_eq!(sum1.to_bytes(), sum2.to_bytes());
-}
-
-#[test]
 fn assert_group_admin() {
     let env = Env::default();
     let contract_id = env.register_contract(None, SemaphoreGroupContract);
@@ -69,4 +29,43 @@ fn assert_group_admin() {
     // // Assert member 1 is in the group
     // let member_count = client.get_member_count(&group_id);
     // assert_eq!(member_count, 1);
+}
+
+#[test]
+fn test_semaphore_flow() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, SemaphoreGroupContract);
+    let client = SemaphoreGroupContractClient::new(&env, &contract_id);
+
+    // Setup group admin
+    let admin = Address::generate(&env);
+    let group_id = 1;
+    client.create_group(&group_id, &admin);
+
+    // Create identity commitments using BLS12-381
+    let bls12_381 = env.crypto().bls12_381();
+    let dst = Bytes::from_slice(&env, b"SEMAPHORE_IDENTITY");
+
+    // User 1 creates identity commitment
+    let secret1 = Bytes::from_slice(&env, b"user1_secret");
+    let commitment1 = bls12_381.hash_to_g1(&secret1, &dst);
+
+    // User 2 creates identity commitment
+    let secret2 = Bytes::from_slice(&env, b"user2_secret");
+    let commitment2 = bls12_381.hash_to_g1(&secret2, &dst);
+
+    // Convert commitments to Bytes
+    let commitment1_bytes = Bytes::from_slice(&env, &commitment1.to_array());
+    let commitment2_bytes = Bytes::from_slice(&env, &commitment2.to_array());
+
+    client.add_member(&group_id, &commitment1_bytes);
+    client.add_member(&group_id, &commitment2_bytes);
+
+    // Verify member count
+    let member_count = client.get_member_count(&group_id);
+    assert_eq!(member_count, 2);
+
+    // Verify membership
+    let is_member = client.is_member(&group_id, &commitment1_bytes);
+    assert!(is_member);
 }
