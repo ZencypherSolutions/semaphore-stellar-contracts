@@ -1,10 +1,32 @@
 use core::fmt::Debug;
-use soroban_sdk::{contracttype, Bytes, Vec};
+use soroban_sdk::{contracttype, log, Bytes, Env, Vec};
+
+use crate::imt::hash_node;
 
 /// Merkle proof path, bottom to top
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Proof(pub Vec<Branch>);
+
+impl Proof {
+    /// Compute the leaf index for this proof
+    pub fn leaf_index(&self) -> usize {
+        self.0.iter().rev().fold(0, |index, branch| match branch {
+            Branch::Left(_) => index << 1,
+            Branch::Right(_) => (index << 1) + 1,
+        })
+    }
+
+    /// Compute the Merkle root given a leaf hash
+    pub fn root(&self, env: &Env, hash: &Bytes) -> Bytes {
+        self.0
+            .iter()
+            .fold(hash.clone(), |hash, branch| match branch {
+                Branch::Left(sibling) => hash_node(env, &sibling, &hash),
+                Branch::Right(sibling) => hash_node(env, &hash, &sibling),
+            })
+    }
+}
 
 /// Element of a Merkle proof
 #[contracttype]

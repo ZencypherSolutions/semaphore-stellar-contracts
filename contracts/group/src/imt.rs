@@ -45,10 +45,10 @@ const fn depth(index: usize) -> usize {
 
 /// Compute the hash of a parent node given its two child nodes
 /// NOTE: currently using keccak256 for hashing
-fn hash_node(env: &Env, left: Bytes, right: Bytes) -> Bytes {
+pub fn hash_node(env: &Env, left: &Bytes, right: &Bytes) -> Bytes {
     let mut combined = Bytes::new(env);
-    combined.append(&left);
-    combined.append(&right);
+    combined.append(left);
+    combined.append(right);
 
     env.crypto().keccak256(&combined).into()
 }
@@ -60,7 +60,7 @@ impl MerkleTree {
         // Precompute empty hashes using `successors`
         let mut empty = Vec::new(env);
         successors(Some(default_leaf.clone()), |prev| {
-            Some(hash_node(env, prev.clone(), prev.clone()))
+            Some(hash_node(env, prev, prev))
         })
         .take((depth + 1) as usize)
         .for_each(|hash| empty.push_back(hash));
@@ -95,7 +95,7 @@ impl MerkleTree {
         while let Some(parent_idx) = parent(current) {
             let left = self.nodes.get(left_child(parent_idx) as u32).unwrap();
             let right = self.nodes.get((left_child(parent_idx) + 1) as u32).unwrap();
-            let parent_hash = hash_node(env, left, right);
+            let parent_hash = hash_node(env, &left, &right);
 
             // Update the parent hash
             self.nodes.set(parent_idx as u32, parent_hash);
@@ -126,6 +126,12 @@ impl MerkleTree {
         }
 
         Some(Proof(path))
+    }
+
+    pub fn verify_proof(&self, env: &Env, leaf_hash: &Bytes, proof: &Proof) -> bool {
+        let root = proof.root(env, leaf_hash);
+        let get_root = self.get_root();
+        root == get_root
     }
 
     pub fn get_root(&self) -> Bytes {
@@ -195,7 +201,7 @@ mod tests {
         let imt = MerkleTree::new(&env, 3, default_leaf.clone());
 
         // calculate hash at level t - 1 (hash(leaf + leaf))
-        let hash_at_level2 = hash_node(&env, default_leaf.clone(), default_leaf.clone());
+        let hash_at_level2 = hash_node(&env, &default_leaf, &default_leaf);
 
         // 0: default leaf
         // 1: root
@@ -287,12 +293,6 @@ mod tests {
 
             // Add the leaf and log state
             imt.add_leaf(&env, index as usize, leaf_value);
-            log!(
-                &env,
-                "imt.nodes after adding leaf at index {}: {:?}",
-                index,
-                imt.nodes
-            );
 
             // Verify nodes are updated correctly
             for i in 0..expected_nodes.len() {
@@ -320,7 +320,7 @@ mod tests {
     }
 
     #[test]
-    fn test_proof() {
+    fn test_proof_and_verify() {
         let env = Env::default();
         let mut imt = MerkleTree::new(&env, 3, Bytes::from_slice(&env, b"default_leaf"));
 
@@ -399,13 +399,17 @@ mod tests {
             ),
         ];
 
-        log!(&env, "nodes: {:?}", imt.nodes);
         for (leaf_index, proof_path) in proof_test_cases {
             let proof = imt.proof(leaf_index as usize).unwrap();
             // Verify proof length
             for i in 0..proof_path.len() {
                 assert_eq!(proof.0.get(i).unwrap(), proof_path.get(i).unwrap());
             }
+
+            let leaf_hash = test_leaves.get(leaf_index).unwrap().1;
+
+            let root = proof.root(&env, &leaf_hash);
+            assert_eq!(root, imt.get_root());
         }
     }
 }
