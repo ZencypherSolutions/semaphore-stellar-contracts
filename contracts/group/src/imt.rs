@@ -33,16 +33,6 @@ const fn left_child(index: usize) -> usize {
     index << 1
 }
 
-const fn depth(index: usize) -> usize {
-    // `n.next_power_of_two()` will return `n` iff `n` is a power of two.
-    // The extra offset corrects this.
-    if index <= 1 {
-        return 0;
-    }
-
-    index.ilog2() as usize
-}
-
 /// Compute the hash of a parent node given its two child nodes
 /// NOTE: currently using keccak256 for hashing
 pub fn hash_node(env: &Env, left: &Bytes, right: &Bytes) -> Bytes {
@@ -158,7 +148,7 @@ impl MerkleTree {
 
 #[cfg(test)]
 mod tests {
-    use soroban_sdk::{crypto::bls12_381::G1Affine, log, vec};
+    use soroban_sdk::{crypto::bls12_381::G1Affine, vec};
 
     use super::*;
 

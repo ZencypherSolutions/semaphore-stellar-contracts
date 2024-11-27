@@ -1,9 +1,7 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{
-    crypto::bls12_381::G1Affine, log, testutils::Address as _, vec, Bytes, Env, String,
-};
+use soroban_sdk::{testutils::Address as _, Bytes, Env};
 
 #[test]
 fn assert_group_admin() {

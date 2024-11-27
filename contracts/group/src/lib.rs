@@ -4,6 +4,7 @@ use crate::datatypes::{DataKey, Error, Member};
 use crate::interface::SemaphoreGroupInterface;
 use datatypes::Group;
 use imt::MerkleTree;
+use proof::Proof;
 use soroban_sdk::{contract, contractimpl, Address, Bytes, Env, Symbol, Vec};
 
 const DEFAULT_DEPTH: u32 = 10;
@@ -343,24 +344,34 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         Ok(env.storage().instance().has(&member_key))
     }
 
+    // return the root of the merkle tree
+    fn get_merkle_root(env: Env, group_id: u32) -> Result<Bytes, Error> {
+        let group_key = DataKey::Group(group_id);
+        let group: Group = env.storage().instance().get(&group_key).unwrap();
+        Ok(group.merkle_tree.get_root())
+    }
+
+    // get the proof for a given identity commitment
+    fn get_proof(env: Env, group_id: u32, leaf_index: u32) -> Result<Proof, Error> {
+        let group_key = DataKey::Group(group_id);
+        let group: Group = env.storage().instance().get(&group_key).unwrap();
+        Ok(group.merkle_tree.proof(leaf_index as usize).unwrap())
+    }
+
     // Verification methods
-    fn verify_merkle_proof(
+    fn verify_proof(
         env: Env,
         group_id: u32,
         identity_commitment: Bytes,
-        proof: Vec<u32>,
+        proof: Proof,
     ) -> Result<bool, Error> {
         let group_key = DataKey::Group(group_id);
         let group: Group = env.storage().instance().get(&group_key).unwrap();
-        // Ok(group.merkle_tree.verify_proof(identity_commitment, proof))
-        Ok(true)
-    }
 
-    fn get_merkle_root(env: Env, group_id: u32) -> Result<u32, Error> {
-        // let group_key = DataKey::Group(group_id);
-        // let group: Group = env.storage().instance().get(&group_key).unwrap();
-        // Ok(group.merkle_tree.get_root())
-        Ok(0)
+        // verify proof
+        Ok(group
+            .merkle_tree
+            .verify_proof(&env, &identity_commitment, &proof))
     }
 }
 mod datatypes;

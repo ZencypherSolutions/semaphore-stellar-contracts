@@ -1,4 +1,7 @@
-use crate::datatypes::{Error, Member};
+use crate::{
+    datatypes::{Error, Member},
+    proof::Proof,
+};
 use soroban_sdk::{Address, Bytes, Env, Vec};
 
 pub trait SemaphoreGroupInterface {
@@ -20,14 +23,15 @@ pub trait SemaphoreGroupInterface {
     fn remove_member(env: Env, group_id: u32, identity_commitment: Bytes) -> Result<(), Error>;
 
     // Verification methods
-    fn verify_merkle_proof(
+    fn verify_proof(
         env: Env,
         group_id: u32,
         identity_commitment: Bytes,
-        proof: Vec<u32>,
+        proof: Proof,
     ) -> Result<bool, Error>;
 
-    fn get_merkle_root(env: Env, group_id: u32) -> Result<u32, Error>;
+    fn get_merkle_root(env: Env, group_id: u32) -> Result<Bytes, Error>;
+    fn get_proof(env: Env, group_id: u32, leaf_index: u32) -> Result<Proof, Error>;
 
     // View Functions
     fn get_group_admin(env: Env, group_id: u32) -> Result<Address, Error>;

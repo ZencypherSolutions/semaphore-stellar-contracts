@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use soroban_sdk::{contracttype, log, Bytes, Env, Vec};
+use soroban_sdk::{contracttype, Bytes, Env, Vec};
 
 use crate::imt::hash_node;
 
