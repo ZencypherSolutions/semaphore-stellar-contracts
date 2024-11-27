@@ -2,6 +2,8 @@ use core::fmt::Debug;
 use core::iter::successors;
 use soroban_sdk::{contracttype, Bytes, Env, Vec};
 
+use crate::proof::{Branch, Proof};
+
 const DST: &[u8] = b"BLS_SIG_BLS12381G1";
 
 #[contracttype]
@@ -83,8 +85,7 @@ impl MerkleTree {
     }
 
     pub fn add_leaf(&mut self, env: &Env, leaf_index: usize, leaf_value: Bytes) {
-        let total_leaves = 1 << self.depth; // Total number of leaves
-        let leaf_pos: usize = total_leaves - 1 + leaf_index; // Position of the leaf in the tree
+        let leaf_pos = self.get_leaf_position(leaf_index as u32); // Position of the leaf in the tree
 
         // Insert the leaf value
         self.nodes.set(leaf_pos as u32, leaf_value);
@@ -103,27 +104,28 @@ impl MerkleTree {
     }
 
     /// Generate a Merkle proof for a leaf at given index
-    pub fn proof(&self, leaf_index: usize) {
-        // if leaf_index >= self.num_leaves() {
-        //     return None;
-        // }
+    pub fn proof(&self, leaf_index: usize) -> Option<Proof> {
+        if leaf_index >= self.num_leaves() {
+            return None;
+        }
 
-        // let mut index = self.num_leaves() + leaf_index;
-        // let mut path = Vec::new(&self.nodes.env());
+        let mut index = self.get_leaf_position(leaf_index as u32);
+        let mut path = Vec::new(&self.nodes.env());
 
-        // while let Some(parent_idx) = parent(index as usize) {
-        //     // Add proof for node at index to parent
-        //     path.push_back(match index & 1 {
-        //         // If index is odd, we're the right child, need left sibling
-        //         1 => Branch::Right(self.nodes.get(index - 1).unwrap()),
-        //         // If index is even, we're the left child, need right sibling
-        //         0 => Branch::Left(self.nodes.get(index + 1).unwrap()),
-        //         _ => unreachable!(),
-        //     });
-        //     index = parent_idx as u32;
-        // }
+        while let Some(parent_idx) = parent(index) {
+            // Add proof for node at index to parent
+            path.push_back(match index & 1 {
+                // If index is odd, we're the right child, need left sibling
+                1 => Branch::Left(self.nodes.get((index - 1) as u32).unwrap()),
+                // If index is even, we're the left child, need right sibling
+                0 => Branch::Right(self.nodes.get((index + 1) as u32).unwrap()),
+                _ => unreachable!(),
+            });
 
-        // Some(Proof(path))
+            index = parent_idx;
+        }
+
+        Some(Proof(path))
     }
 
     pub fn get_root(&self) -> Bytes {
@@ -132,6 +134,10 @@ impl MerkleTree {
 
     pub fn num_leaves(&self) -> usize {
         1 << self.depth
+    }
+
+    pub fn get_leaf_position(&self, leaf_index: u32) -> usize {
+        (1 << (self.depth - 1)) + leaf_index as usize
     }
 
     /// hash the bls12_381 value to a g1 point
@@ -203,9 +209,6 @@ mod tests {
     fn test_add_leaf() {
         let env = Env::default();
         let default_leaf = Bytes::from_slice(&env, b"default_leaf");
-        let mut imt = MerkleTree::new(&env, 3, default_leaf.clone());
-
-        let leaf_value = Bytes::from_slice(&env, b"new_leaf");
 
         // get expected values for testing
         // Tree structure
@@ -254,20 +257,154 @@ mod tests {
             ),
         ];
 
-        imt.add_leaf(&env, 0, leaf_value);
+        let test_cases = vec![
+            &env,
+            // (index to add leaf, leaf value, expected updated node indices)
+            (
+                0u32,                               // leaf index
+                Bytes::from_slice(&env, b"leaf_0"), // some randome value
+                vec![&env, 1u32, 2u32, 4u32],       // expected updated node indices
+            ),
+            (
+                1u32,
+                Bytes::from_slice(&env, b"leaf_1"),
+                vec![&env, 1u32, 2u32, 5u32],
+            ),
+            (
+                2u32,
+                Bytes::from_slice(&env, b"leaf_2"),
+                vec![&env, 1u32, 3u32, 6u32],
+            ),
+            (
+                3u32,
+                Bytes::from_slice(&env, b"leaf_3"),
+                vec![&env, 1u32, 3u32, 7u32],
+            ),
+        ];
 
-        // add new leaf -> what happens?
-        // right most leaf is updated
-        // corresponding internal nodes are updated
-        let expected_updated_nodes = vec![&env, 1, 3, 7];
+        for (index, leaf_value, expected_updated_nodes) in test_cases {
+            let mut imt = MerkleTree::new(&env, 3, default_leaf.clone());
 
-        for i in 0..expected_nodes.len() {
-            // if the node is in the expected_updated_nodes, it should be updated
-            if expected_updated_nodes.contains(&i) {
-                assert_ne!(imt.nodes.get(i).unwrap(), expected_nodes.get(i).unwrap());
-            } else {
-                // else, should not
-                assert_eq!(imt.nodes.get(i).unwrap(), expected_nodes.get(i).unwrap());
+            // Add the leaf and log state
+            imt.add_leaf(&env, index as usize, leaf_value);
+            log!(
+                &env,
+                "imt.nodes after adding leaf at index {}: {:?}",
+                index,
+                imt.nodes
+            );
+
+            // Verify nodes are updated correctly
+            for i in 0..expected_nodes.len() {
+                if expected_updated_nodes.contains(&i) {
+                    // Updated nodes should be different from initial state
+                    assert_ne!(
+                        imt.nodes.get(i).unwrap(),
+                        expected_nodes.get(i).unwrap(),
+                        "Node {} should have been updated for leaf at index {}",
+                        i,
+                        index
+                    );
+                } else {
+                    // Other nodes should remain unchanged
+                    assert_eq!(
+                        imt.nodes.get(i).unwrap(),
+                        expected_nodes.get(i).unwrap(),
+                        "Node {} should not have changed for leaf at index {}",
+                        i,
+                        index
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_proof() {
+        let env = Env::default();
+        let mut imt = MerkleTree::new(&env, 3, Bytes::from_slice(&env, b"default_leaf"));
+
+        // Setup test leaves
+        let test_leaves = vec![
+            &env,
+            (0u32, Bytes::from_slice(&env, b"leaf_0")),
+            (1u32, Bytes::from_slice(&env, b"leaf_1")),
+            (2u32, Bytes::from_slice(&env, b"leaf_2")),
+            (3u32, Bytes::from_slice(&env, b"leaf_3")),
+        ];
+
+        // Add all leaves
+        for (index, leaf_value) in test_leaves.iter() {
+            imt.add_leaf(&env, index as usize, leaf_value.clone());
+        }
+
+        let expected_nodes = vec![
+            &env,
+            Bytes::from_slice(&env, b"64656661756c745f6c656166"),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("3411afb1a213a227a3e6914c3cdef1421ccdce632feae7fc29f4a0fa05690ec1")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("3b7e0da5747e3704403e122296d2796f7c98b11285add1298aabc373a277b1cb")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("060727d65d4f88eac77322dfb53320954f8fb0495dda1f26f14d1fcb2cdd60d7")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(&env, &hex::decode("6c6561665f30").unwrap()),
+            Bytes::from_slice(&env, &hex::decode("6c6561665f31").unwrap()),
+            Bytes::from_slice(&env, &hex::decode("6c6561665f32").unwrap()),
+            Bytes::from_slice(&env, &hex::decode("6c6561665f33").unwrap()),
+        ];
+
+        // Test cases for proof verification
+        let proof_test_cases = vec![
+            &env,
+            (
+                0u32,
+                vec![
+                    &env,
+                    Branch::Right(expected_nodes.get(5).unwrap()),
+                    Branch::Right(expected_nodes.get(3).unwrap()),
+                ], // proof path
+            ),
+            (
+                1u32,
+                vec![
+                    &env,
+                    Branch::Left(expected_nodes.get(4).unwrap()),
+                    Branch::Right(expected_nodes.get(3).unwrap()),
+                ], // proof path
+            ),
+            (
+                2u32,
+                vec![
+                    &env,
+                    Branch::Right(expected_nodes.get(7).unwrap()),
+                    Branch::Left(expected_nodes.get(2).unwrap()),
+                ], // proof path
+            ),
+            (
+                3u32,
+                vec![
+                    &env,
+                    Branch::Left(expected_nodes.get(6).unwrap()),
+                    Branch::Left(expected_nodes.get(2).unwrap()),
+                ], // proof path
+            ),
+        ];
+
+        log!(&env, "nodes: {:?}", imt.nodes);
+        for (leaf_index, proof_path) in proof_test_cases {
+            let proof = imt.proof(leaf_index as usize).unwrap();
+            // Verify proof length
+            for i in 0..proof_path.len() {
+                assert_eq!(proof.0.get(i).unwrap(), proof_path.get(i).unwrap());
             }
         }
     }
