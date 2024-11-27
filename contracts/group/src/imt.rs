@@ -2,6 +2,8 @@ use core::fmt::Debug;
 use core::iter::successors;
 use soroban_sdk::{contracttype, Bytes, Env, Vec};
 
+const DST: &[u8] = b"BLS_SIG_BLS12381G1";
+
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub struct MerkleTree {
@@ -131,12 +133,19 @@ impl MerkleTree {
     pub fn num_leaves(&self) -> usize {
         1 << self.depth
     }
+
+    /// hash the bls12_381 value to a g1 point
+    pub fn hash_to_g1(&self, env: &Env, value: Bytes) -> Bytes {
+        env.crypto()
+            .bls12_381()
+            .hash_to_g1(&value, &Bytes::from_slice(env, DST))
+            .to_bytes()
+            .into()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use core::iter::Empty;
-
     use soroban_sdk::{crypto::bls12_381::G1Affine, log, vec};
 
     use super::*;

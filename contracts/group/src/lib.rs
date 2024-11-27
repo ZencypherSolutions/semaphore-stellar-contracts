@@ -165,9 +165,15 @@ impl SemaphoreGroupInterface for SemaphoreGroupContract {
         // update merkle tree
         let group_key = DataKey::Group(group_id);
         let mut group: Group = env.storage().instance().get(&group_key).unwrap();
-        group
-            .merkle_tree
-            .add_leaf(&env, current_count as usize, identity_commitment.clone());
+
+        group.merkle_tree.add_leaf(
+            &env,
+            current_count as usize,
+            group
+                .merkle_tree
+                .hash_to_g1(&env, identity_commitment.clone()),
+        );
+
         env.storage().instance().set(&group_key, &group);
 
         // Emit event
