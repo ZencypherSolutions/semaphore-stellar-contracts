@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 use core::iter::successors;
-use soroban_sdk::{contracttype, crypto, xdr::Uint32, Bytes, Env, Vec};
+use soroban_sdk::{contracttype, Bytes, Env, Vec};
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
