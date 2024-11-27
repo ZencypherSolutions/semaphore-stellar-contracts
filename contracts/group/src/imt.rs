@@ -40,6 +40,7 @@ const fn depth(index: usize) -> usize {
 }
 
 /// Compute the hash of a parent node given its two child nodes
+/// NOTE: currently using keccak256 for hashing
 fn hash_node(env: &Env, left: Bytes, right: Bytes) -> Bytes {
     let mut combined = Bytes::new(env);
     combined.append(&left);
@@ -99,30 +100,46 @@ impl MerkleTree {
         }
     }
 
-    pub fn verify_proof(&self, identity_commitment: Bytes, proof: Vec<u32>) -> bool {
-        // TODO: implement proof verification
-        true
+    /// Generate a Merkle proof for a leaf at given index
+    pub fn proof(&self, leaf_index: usize) {
+        // if leaf_index >= self.num_leaves() {
+        //     return None;
+        // }
+
+        // let mut index = self.num_leaves() + leaf_index;
+        // let mut path = Vec::new(&self.nodes.env());
+
+        // while let Some(parent_idx) = parent(index as usize) {
+        //     // Add proof for node at index to parent
+        //     path.push_back(match index & 1 {
+        //         // If index is odd, we're the right child, need left sibling
+        //         1 => Branch::Right(self.nodes.get(index - 1).unwrap()),
+        //         // If index is even, we're the left child, need right sibling
+        //         0 => Branch::Left(self.nodes.get(index + 1).unwrap()),
+        //         _ => unreachable!(),
+        //     });
+        //     index = parent_idx as u32;
+        // }
+
+        // Some(Proof(path))
     }
 
     pub fn get_root(&self) -> Bytes {
         self.nodes.get(1).unwrap()
     }
+
+    pub fn num_leaves(&self) -> usize {
+        1 << self.depth
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use soroban_sdk::{crypto::bls12_381::G1Affine, log};
+    use core::iter::Empty;
+
+    use soroban_sdk::{crypto::bls12_381::G1Affine, log, vec};
 
     use super::*;
-
-    #[test]
-    fn test_new() {
-        let env = Env::default();
-        let default_leaf = Bytes::from_slice(&env, b"default_leaf");
-        let _ = MerkleTree::new(&env, 3, default_leaf);
-
-        // TODO: add assertions
-    }
 
     #[test]
     fn bls12_381_can_convert_to_bytes_and_back() {
@@ -154,5 +171,95 @@ mod tests {
         assert_eq!(point1.to_bytes(), recovered_point1.to_bytes());
         assert_eq!(point2.to_bytes(), recovered_point2.to_bytes());
         assert_eq!(sum1.to_bytes(), sum2.to_bytes());
+    }
+
+    #[test]
+    fn test_new() {
+        let env = Env::default();
+        let default_leaf = Bytes::from_slice(&env, b"default_leaf");
+        let imt = MerkleTree::new(&env, 3, default_leaf.clone());
+
+        // calculate hash at level t - 1 (hash(leaf + leaf))
+        let hash_at_level2 = hash_node(&env, default_leaf.clone(), default_leaf.clone());
+
+        // 0: default leaf
+        // 1: root
+        // 2: hash(leaf + leaf)
+        // 3: leaf
+        let level2_idx = 0 + (1 << 0) + (1 << 1) + 1; // Using bit shifts: 0 + 1 + 2 + 1 = 4
+        assert_eq!(imt.nodes.get(level2_idx).unwrap(), hash_at_level2);
+    }
+
+    #[test]
+    fn test_add_leaf() {
+        let env = Env::default();
+        let default_leaf = Bytes::from_slice(&env, b"default_leaf");
+        let mut imt = MerkleTree::new(&env, 3, default_leaf.clone());
+
+        let leaf_value = Bytes::from_slice(&env, b"new_leaf");
+
+        // get expected values for testing
+        // Tree structure
+        //          0 // empty slot
+        //          1
+        //      2       3
+        //    4   5   6   7
+
+        let expected_nodes = vec![
+            &env,
+            Bytes::from_slice(&env, b"default_leaf"),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("ec44baf66ce9f0165df6f7489e7b768fefaaf97a90e6377011f9725779d849e2")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("b36425c35b074ac99a412458fc0bceaed7e9e401e65e32c9045c38645a0b99a4")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("b36425c35b074ac99a412458fc0bceaed7e9e401e65e32c9045c38645a0b99a4")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("e7d33409e0386a947ba46ff63ad2a5126450a326877d8b1094b70db57c03d50f")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("e7d33409e0386a947ba46ff63ad2a5126450a326877d8b1094b70db57c03d50f")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("e7d33409e0386a947ba46ff63ad2a5126450a326877d8b1094b70db57c03d50f")
+                    .unwrap(),
+            ),
+            Bytes::from_slice(
+                &env,
+                &hex::decode("e7d33409e0386a947ba46ff63ad2a5126450a326877d8b1094b70db57c03d50f")
+                    .unwrap(),
+            ),
+        ];
+
+        imt.add_leaf(&env, 0, leaf_value);
+
+        // add new leaf -> what happens?
+        // right most leaf is updated
+        // corresponding internal nodes are updated
+        let expected_updated_nodes = vec![&env, 1, 3, 7];
+
+        for i in 0..expected_nodes.len() {
+            // if the node is in the expected_updated_nodes, it should be updated
+            if expected_updated_nodes.contains(&i) {
+                assert_ne!(imt.nodes.get(i).unwrap(), expected_nodes.get(i).unwrap());
+            } else {
+                // else, should not
+                assert_eq!(imt.nodes.get(i).unwrap(), expected_nodes.get(i).unwrap());
+            }
+        }
     }
 }
