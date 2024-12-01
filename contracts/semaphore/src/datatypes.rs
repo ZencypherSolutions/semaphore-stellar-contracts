@@ -1,5 +1,5 @@
-use soroban_sdk::contracttype;
 use soroban_sdk::contracterror;
+use soroban_sdk::contracttype;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -12,6 +12,9 @@ pub enum Error {
     MemberAlreadyExists = 5,
     MemberDoesNotExist = 6,
     InvalidIdentityCommitment = 7,
+    InvalidMerkleTreeDepth = 8,
+    GroupHasNoMembers = 9,
+    MerkleTreeRootNotInGroup = 10,
 }
 
 #[contracttype]
@@ -30,5 +33,3 @@ pub struct Member {
     pub group_id: u32,
     pub index: u32, // Position in the group
 }
-
-
